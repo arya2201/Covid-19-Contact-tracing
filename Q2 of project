@@ -1,0 +1,112 @@
+QUESTION
+
+Write a function contact_event(visit_a, visit_b) to determine if two visits overlap in time and space, allowing for contact between two people to potentially occur.
+
+The parameters of this function are as follows:
+
+visit_a
+visit_b
+each of which is a 7-tuple formatted as described above.
+
+The function should return True if a contact could have occurred between two distinct people, and False otherwise. If one visit began at the exact time that the other visit ended, you may assume that a potential contact could not occur (ie, the function should return False). If either of the visits is not valid, the function should return None.
+
+Assumptions:
+
+You can assume that the input arguments are syntactically correct given the definitions and assumptions on the previous slides.
+Here are some example calls to the function:
+
+>>> print(contact_event(('Russel', 'Foodigm', 2, 9, 0, 10, 0), ('Natalya', 'Foodigm', 2, 9, 30, 9, 45)))
+True
+>>> print(contact_event(('Russel', 'Foodigm', 2, 9, 0, 10, 0), ('Natalya', 'Foodigm', 2, 10, 0, 10, 20)))
+False
+>>> print(contact_event(("Natalya", 'Foodigm', 2, 9, 30, 9, 45), ('Chihiro', 'Foodigm', 2, 8, 45, 9, 15))) # there is no time overlap
+False
+>>> print(contact_event(('Russel', 'Foodigm', 2, 9, 0, 10, 0), ('Aravinda', 'Afforage', 2, 9, 0, 10, 0))) # the two visit were to different locations
+False
+>>> print(contact_event(('Russel', 'Foodigm', 2, 9, 0, 10, 0), ('Russel', 'Foodigm', 2, 8, 30, 9, 0))) # the two visits are by the same person
+False
+>>> print(contact_event(('Russel', 'Foodigm', 2, 9, 0, 10, 0), ('Natalya', 'Afforage', 2, 15, 10, 14, 45))) # one of the visits is invalid
+None
+
+
+
+CODE:::::
+
+
+import datetime
+from datetime import timedelta
+
+
+def visit_length(visit):
+    ''' Function accepts a tuple of 7 values and returns the 
+    time difference between two given intervals'''
+
+    # Converting the Tuple to List
+    temp = list(visit)
+    time1 = timedelta(hours=temp[3], minutes=temp[4])
+    time2 = timedelta(hours=temp[5], minutes=temp[6])
+    time_diff = str(time2 - time1).split(':')
+    
+    # Checking whether the time difference is zero or invalid
+    if len(time_diff[0]) > 2 or int(time_diff[0])==int(time_diff[1])==0:
+        return None
+    else:
+        return tuple([int(time_diff[0]), int(time_diff[1])])
+
+def check_t_range(s1, s2, e1, e2):
+    ''' Funtion which takes start_time and end_time and checks the
+    overlapping between two intervals'''
+    
+    total_mins = (e2 - s2).total_seconds() / 60
+    flag = False
+    
+    # Checking every minute and returns True if found in the interval
+    for i in range(1, int(total_mins) + 1):
+        time_range = s1 < (s2 + timedelta(minutes=i)) < e1
+        if time_range:
+            flag = True
+            break
+    return flag
+    
+
+def contact_event(visit_a, visit_b):
+    ''' Funtion which accepts two visits and returns
+    whether there was an overlap between two visits'''
+    
+    # TODO
+    visit_a = list(visit_a)
+    visit_b = list(visit_b)
+
+    p1_name = visit_a[0]
+    p2_name = visit_b[0]
+    
+    p1_place = visit_a[1]
+    p2_place = visit_b[1]
+    
+    t1_time = visit_length(visit_a)
+    t2_time = visit_length(visit_b)
+    
+    start_time1 = timedelta(hours=visit_a[3], minutes=visit_a[4])
+    start_time2 = timedelta(hours=visit_b[3], minutes=visit_b[4])
+    
+    end_time1 = timedelta(hours=visit_a[5], minutes=visit_a[6])
+    end_time2 = timedelta(hours=visit_b[5], minutes=visit_b[6])
+    
+    # If there is any invalid time
+    if t1_time is None or t2_time is None:
+        return None
+    
+    # Checking if the place is not same or the person is same for both visits
+    elif p1_place!=p2_place or p1_name==p2_name:
+        return False
+    
+    # Checking if there is any time overlap
+    elif check_t_range(start_time1, start_time2, end_time1, end_time2):
+        return True
+
+    else:
+        return False
+    
+    
+print(contact_event(('Harry', 'Hogwarts', 1, 0, 1, 0, 2), ('Hermoine', 'Hogwarts', 1, 0, 0, 23, 59)))    
+   
