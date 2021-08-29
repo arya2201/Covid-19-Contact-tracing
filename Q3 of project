@@ -1,0 +1,132 @@
+QUESTION
+
+Write a function potential_contacts(person_a, person_b) that identifies all of the potential contacts between two people, given data on their movement over multiple days.
+
+The function takes the following arguments,
+
+person_a
+person_b,
+which are each lists of visits by the two people, with each visit formatted as a 7-tuple as described above.
+
+The function should return a tuple consisting of:
+
+a set of potential contact locations and times for these two people, each in the form of a 6-tuple (see below; note that the order of the items in this set does not matter, as a set does not store order); and
+a 2-tuple containing a pair of integer values (hours and minutes) corresponding to the total duration of potential contact between these two people.
+Note that each the potential contact locations and time in the returned set is a 6-tuple rather than a 7-tuple because it will not include the ID of an individual. It also differs from the 7-tuple described above in that the times referred to, are not the time at which a person arrived at and departed from a location, but rather the time at which the two people started being at the same location (ie, when the second person arrive) and the time at which the two people stopped being at the same location (ie, when the first person left).
+
+For example, if the original visit 7-tuples were:
+
+("Natalya", "Nutrity", 2, 10, 10, 11, 45)
+
+and:
+
+("Chihiro", "Nutrity", 2, 9, 45, 11, 30)
+
+then the 6-tuple corresponding to the potential contact between Natalya and Chihiro would be:
+
+("Nutrify", 2, 10, 10, 11, 30)
+
+indicating that they were both located at Nutrity on the second day of the outbreak between 10:10am and 11:30am.
+
+Assumptions:
+
+You can assume that the input arguments are syntactically correct given the definitions and assumptions on this slide and on previous slides.
+Any invalid visits should be ignored. Contact locations and times should only be generated for pairs of valid visits.
+Here are some example calls to your function:
+
+>>> potential_contacts([('Russel', 'Foodigm', 2, 9, 0, 10, 0), ('Russel', 'Afforage', 2, 10, 0, 11, 30), ('Russel', 'Nutrity', 2, 11, 45, 12, 0), ('Russel', 'Liberry', 3, 13, 0, 14, 15)], [('Natalya', 'Afforage', 2, 8, 15, 10, 0), ('Natalya', 'Nutrity', 4, 10, 10, 11, 45)])
+(set(), (0, 0))
+>>> potential_contacts([('Russel', 'Foodigm', 2, 9, 0, 10, 0), ('Russel', 'Afforage', 2, 10, 0, 11, 30), ('Russel', 'Nutrity', 2, 11, 45, 12, 0), ('Russel', 'Liberry', 3, 13, 0, 14, 15)], [('Chihiro', 'Foodigm', 2, 9, 15, 9, 30), ('Chihiro', 'Nutrity', 4, 9, 45, 11, 30), ('Chihiro', 'Liberry', 3, 12, 15, 13, 25)])
+({('Foodigm', 2, 9, 15, 9, 30), ('Liberry', 3, 13, 0, 13, 25)}, (0, 40))
+>>> potential_contacts([('Natalya', 'Afforage', 2, 8, 15, 10, 0), ('Natalya', 'Nutrity', 4, 10, 10, 11, 45)], [('Chihiro', 'Foodigm', 2, 9, 15, 9, 30), ('Chihiro', 'Nutrity', 4, 9, 45, 11, 30), ('Chihiro', 'Liberry', 3, 12, 15, 13, 25)])
+({('Nutrity', 4, 10, 10, 11, 30)}, (1, 20))
+>>> potential_contacts([('Russel', 'Foodigm', 2, 9, 0, 10, 0), ('Russel', 'Afforage', 2, 10, 0, 11, 30), ('Russel', 'Nutrity', 2, 11, 45, 12, 0), ('Russel', 'Liberry', 3, 13, 0, 14, 15)], [])  # person with no visits
+(set(), (0, 0))
+
+
+
+CODE::::
+
+
+import datetime
+from datetime import timedelta
+
+
+def check_overlapping(s1, s2, e1, e2):
+    ''' This function checks if there is overlapping between two intervals
+    by going through every minute'''
+    
+    total_mins = (e2 - s2).total_seconds() / 60
+    flag = False
+    
+    # Checking all the minutes
+    for i in range(1, int(total_mins)+ 1):
+        time_range = s1 < (s2 + timedelta(minutes=i)) <= e1
+        if time_range:
+            flag = True
+            break
+    return flag
+    
+
+def overlapping_time(s1, s2, e1, e2):
+    ''' This function checks through every minute and returns only the
+    overlapping period'''
+    
+    total_mins = (e2 - s2).total_seconds() / 60
+    overlap_time = []
+    for i in range(0, int(total_mins) + 1):
+        time_range = s1 <= (s2 + timedelta(minutes=i)) <= e1
+        
+        # If it is in the range, append it to the list
+        if time_range:
+            overlap_time.append(s2 + timedelta(minutes=i))
+    return overlap_time[0], overlap_time[-1]
+
+    
+def potential_contacts(person_a, person_b):
+    ''' This function takes all  the potential contacts between two
+    people and returns the set of results and the total time they have
+    overlapped'''
+    # TODO
+    
+    result = []
+    total_time_hr = 0
+    total_time_min = 0
+    
+    # All the visits of person_a
+    for visit_a in person_a:
+        visit_a = list(visit_a)
+        
+        # All the visits of person_b
+        for visit_b in person_b:
+            visit_b = list(visit_b)
+            
+            # Checking if the name of person is not same and
+            # Checking if the place and day is same for both person.
+            if (visit_a[0]!=visit_b[0] and 
+                visit_a[1]==visit_b[1] and 
+                visit_a[2]==visit_b[2]):
+                s1 = timedelta(hours=visit_a[3], minutes=visit_a[4])
+                s2 = timedelta(hours=visit_b[3], minutes=visit_b[4])
+                e1 = timedelta(hours=visit_a[5], minutes=visit_a[6])
+                e2 = timedelta(hours=visit_b[5], minutes=visit_b[6])
+                
+                # Checking if there is any time overlapping
+                if check_overlapping(s1, s2, e1, e2):
+                    start_t, end_t = overlapping_time(s1, s2, e1, e2)
+                    s_hr = int(str(start_t).split(':')[0])
+                    s_min = int(str(start_t).split(':')[1])
+                    end_hr = int(str(end_t).split(':')[0])
+                    end_min = int(str(end_t).split(':')[1])
+                    
+                    result.append(
+                        (visit_a[1], visit_a[2], s_hr, s_min, end_hr, end_min)        
+                    )
+                    
+                    time_diff = end_t - start_t
+                    time_diff_hr = int(str(time_diff).split(':')[0])
+                    time_diff_min = int(str(time_diff).split(':')[1])
+                    total_time_hr += time_diff_hr
+                    total_time_min += time_diff_min
+                    
+    return (set(result), (total_time_hr, total_time_min))
