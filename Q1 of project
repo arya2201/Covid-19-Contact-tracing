@@ -1,0 +1,53 @@
+Write a function visit_length(visit) to determine the length of a person's visit to a particular location.
+
+The function takes one argument, visit, which is a 7-tuple formatted as described above.
+
+The function should return the length of the visit as a tuple of integer values, corresponding to hours and minutes if the visit is valid, or None if the visit is not valid. A valid visit is one with a positive length (ie, more than zero minutes).
+
+For example,
+visit_length(("Irene", "Skylabs", 3, 9, 15, 13, 45))
+(4, 30)
+which means that Irene spent 4 hours and 30 minutes at Skylabs from 9:15am to 1:45pm on the third day of the outbreak.
+
+Assumptions:
+
+You can assume that the input arguments are syntactically correct given the definitions and assumptions on the previous slides.
+Here are some example calls to the function:
+
+>>> print(visit_length(('Russel', 'Foodigm', 2, 9, 0, 10, 0)))
+(1, 0)
+>>> print(visit_length(('Natalya', 'Foodigm', 2, 9, 30, 9, 45)))
+(0, 15)
+>>> print(visit_length(('Chihiro', 'Foodigm', 2, 8, 45, 9, 15)))
+(0, 30)
+>>> print(visit_length(('Aravinda', 'Afforage', 2, 9, 0, 10, 0)))
+(1, 0)
+>>> print(visit_length(('Chihiro', 'Foodigm', 2, 8, 30, 9, 0)))
+(0, 30)
+>>> print(visit_length(('Natalya', 'Afforage', 2, 15, 10, 14, 45)))  # the length of the visit is negative
+None
+>>> print(visit_length(('Aravinda', 'Nutrity', 2, 15, 10, 15, 10)))  # the length of the visit is zero
+None
+
+
+CODE:::
+
+
+import datetime
+from datetime import timedelta
+
+def visit_length(visit):
+    ''' Function accepts a tuple of 7 values and returns the 
+    time difference between two given intervals'''
+    # TODO
+    # Converting the Tuple to List
+    temp = list(visit)
+    time1 = timedelta(hours=temp[3], minutes=temp[4])
+    time2 = timedelta(hours=temp[5], minutes=temp[6])
+    time_diff = str(time2 - time1).split(':')
+    
+    # Checking whether the time difference is zero or invalid
+    if len(time_diff[0]) > 2 or int(time_diff[0])==int(time_diff[1])==0:
+        return None
+    else:
+        return tuple([int(time_diff[0]), int(time_diff[1])])
