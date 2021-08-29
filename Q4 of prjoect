@@ -1,0 +1,219 @@
+QUESTION
+
+Write a function forward_contact_trace(visits, index, day_time, second_order=False) that identifies all potential contacts of a detected index case that occurred after the time that they were detected. These are the people who will be contacted by public health officials to ask them to quarantine until they are sure that they were not infected by the index case.
+
+It is possible that, by the time a contact of an index case has been traced, they may have already infected other people. Therefore, public health officials may wish to be very cautious and also trace the second order contacts of the index case. That is, the contacts of the contacts of the original detected case.
+
+The function takes the following parameters:
+
+visits is a list of visits, with each visit formatted as a 7-tuple as described above;
+index is the ID of the detected index case;
+day_time is the day and time that the index case was detected, described as a 3-tuple containing the day, as an integer value, and time, as a pair of integer values, corresponding to hours and minutes, in 24 hour time; for example, (2, 15, 35) refers to 3:35pm on day 2 of the outbreak; and
+second_order a Boolean flag to indicate whether second order contacts of the index case should be included.
+The function should return an alphabetically sorted list of IDs of people who should be traced and asked to quarantine.
+
+For example:
+
+>>> visits = [('Russel', 'Nutrity', 1, 5, 0, 6, 0),
+           ('Russel', 'Foodigm', 2, 9, 0, 10, 0),
+           ('Russel', 'Afforage', 2, 10, 0, 11, 30),
+           ('Russel', 'Nutrity', 2, 11, 45, 12, 0),
+           ('Russel', 'Liberry', 3, 13, 0, 14, 15),
+           ('Natalya', 'Nutrity', 1, 5, 30, 6, 45),
+           ('Natalya', 'Afforage', 2, 8, 15, 10, 0),
+           ('Natalya', 'Nutrity', 4, 10, 10, 11, 45),
+           ('Chihiro', 'Foodigm', 2, 9, 15, 9, 30),
+           ('Chihiro', 'Nutrity', 4, 9, 45, 11, 30),
+           ('Chihiro', 'Liberry', 3, 12, 15, 13, 25)]
+​
+>>> forward_contact_trace(visits, 'Russel', (1, 9, 0))
+['Chihiro']
+The reasoning is as follows:
+
+Russel became infectious at 9am on day 1 of the outbreak.
+Russel visited Foodigm between 9am and 10am on day 2 of the outbreak.
+Chihiro also visited Foodigm during this time (from 9.15am until 9.45am), during which time she could have been infected by Russel. She should be contact traced and asked to quarantine.
+Natalya was not present in the same location at the same time as Russel after he became infectious, so she doesn't need to be contact traced.
+On the other hand, for the same list of visit data:
+
+>>> visits = [('Russel', 'Nutrity', 1, 5, 0, 6, 0),
+           ('Russel', 'Foodigm', 2, 9, 0, 10, 0),
+           ('Russel', 'Afforage', 2, 10, 0, 11, 30),
+           ('Russel', 'Nutrity', 2, 11, 45, 12, 0),
+           ('Russel', 'Liberry', 3, 13, 0, 14, 15),
+           ('Natalya', 'Nutrity', 1, 5, 30, 6, 45),
+           ('Natalya', 'Afforage', 2, 8, 15, 10, 0),
+           ('Natalya', 'Nutrity', 4, 10, 10, 11, 45),
+           ('Chihiro', 'Foodigm', 2, 9, 15, 9, 30),
+           ('Chihiro', 'Nutrity', 4, 9, 45, 11, 30),
+           ('Chihiro', 'Liberry', 3, 12, 15, 13, 25)]
+​
+>>> forward_contact_trace(visits, 'Russel', (1, 9, 0), second_order=True)
+['Chihiro', 'Natalya']
+The reasoning begins as above; however:
+
+After being a potential contact of Russel, Chihiro visited Nutrity between 9:45am and 11:30am on day 4 of the outbreak.
+Natalya also visited Nutrity during this time (from 10:10am until 11:45am), during which time she could have been infected by Chihiro (had she been infected). As we are now also tracing Russel's second order contacts, she should also be contact traced and asked to quarantine.
+Hint: Start by solving the problem of first order contact tracing. Once you have written a function for this, think about how you can make use of it to solve the problem of second order contact tracing. You may wish to use a second function to manage this.
+
+Assumptions:
+
+You can assume that the input arguments are syntactically correct given the definitions and assumptions on this slide and on previous slides.
+You are provided with a correct reference version of the function potential_contacts(person_a, person_b) from Question 3.
+
+
+CODE:::::
+
+# a correct implementation of potential_contacts(person_a, person_b)
+# do not delete this line!
+from reference import potential_contacts
+from datetime import timedelta
+
+def check_overlapping(start, end, infection_time):
+    ''' This function checks if the infection time is less than or
+    equal to the end of overlapping time
+    '''
+    
+    total_mins = (end - start).total_seconds() / 60
+    flag = False
+    for i in range(1, int(total_mins) +1):
+        time_range = end >= (infection_time + timedelta(minutes=i))
+        if time_range:
+            flag = True
+            break
+    return flag
+
+
+def single_forward_trace(visits, index, day_time):
+    ''' This function takes three parameters,
+        visits: a list of visits
+        index: infected person
+        day_time: a tuple of three values(day, hour, minute)
+    and returns a unique list of potential contacts
+    '''
+    day_time = list(day_time)
+    infection_time = timedelta(hours=day_time[1], minutes=day_time[2])
+    
+    # Creating a dictionary in which the keys are the person name and 
+    # the values are all the visits of that person
+    pairs = {}
+    for visit in visits:
+        if visit[0] in pairs:
+            pairs[visit[0]].append(visit)
+        else:
+            pairs[visit[0]] = [visit]
+    
+    # Creating a forward_trace dictionary in which keys are infected person's
+    # name and values are the infection time of that person
+    forward_trace = {}
+    
+    # Finding the first order contact trace 
+    for person in pairs.keys():
+        if person != index:
+            
+            # Finding potential contacts between index and the person's visits
+            results = potential_contacts(pairs[index], pairs[person])
+            if len(list(results)[0]) != 0:
+                results = list(list(results)[0])
+                for result in results:
+                    for visit in pairs[person]:
+                        
+                        # Checking if the place and day is same
+                        if (result[0] == visit[1] and result[1] == visit[2]):
+                            start_time = timedelta(
+                                hours=result[2], minutes=result[3])
+                            end_time = timedelta(
+                                hours=result[4], minutes=result[5])
+                            time = timedelta(
+                                days=result[1],
+                                hours=result[2],
+                                minutes=result[3]
+                            )
+                            overlapping = check_overlapping(
+                                start_time, end_time, infection_time)
+                            if ((day_time[0]==visit[2]) and overlapping):
+                                if person in forward_trace:
+                                    forward_trace[person].append(time)
+                                else:
+                                    forward_trace[person] = [time]
+                            elif visit[2] > day_time[0]:
+                                if person in forward_trace:
+                                    forward_trace[person].append(time)
+                                else:
+                                    forward_trace[person] = [time]
+    
+    output = []
+    # Going through all the infected visits of each person and 
+    # adding the tuple of person's name and first overlapping infection time
+    for person in forward_trace.keys():
+        first_meet = min(forward_trace[person])
+        day = str(first_meet).split(',')[0][0]
+        hr = str(first_meet).split(',')[1].split(':')[0]
+        mins = str(first_meet).split(',')[1].split(':')[1]
+        output.append((person, (int(day), int(hr), int(mins))))
+
+    return output
+
+         
+def forward_contact_trace(visits, index, day_time, second_order=False):
+    ''' 
+    This function takes four parameters,
+        visits: a list of visits
+        index: infected person
+        day_time: a tuple of three values(day, hour, minute)
+        second_order: accepts boolean value
+    and returns a sorted list of infected persons
+    '''
+    # TODO
+    
+    # Finding the details of infected person
+    tracing_history = single_forward_trace(visits, index, day_time)
+    infected_persons = []
+    
+    # Checking if the first order trace list is empty or not
+    if len(tracing_history)!= 0:
+        for i in tracing_history:
+            infected_persons.append(i[0])
+
+        # If second_order True        
+        if second_order:
+            
+            # Finding all the visits excluding the visit of index case
+            pairs = []
+            for visit in visits:
+                if visit[0] != index:
+                    pairs.append(visit)
+           
+            if len(pairs)!= 0:
+                
+                # Checking second order for all infected persons in first order
+                for history in tracing_history:
+                    index = history[0]
+                    day_time = history[1]
+                    result = single_forward_trace(pairs, index, day_time)
+                    if len(result)!= 0:
+                        for i in result:
+                            
+                            # Checking if the person is already infected
+                            if i[0] not in infected_persons:
+                                infected_persons.append(i[0])
+
+    return sorted(infected_persons)
+
+
+visits = [('Russel', 'Nutrity', 1, 5, 0, 6, 0),
+           ('Russel', 'Foodigm', 2, 9, 0, 10, 0),
+           ('Russel', 'Afforage', 2, 10, 0, 11, 30),
+           ('Russel', 'Nutrity', 2, 11, 45, 12, 0),
+           ('Russel', 'Liberry', 3, 13, 0, 14, 15),
+           ('Natalya', 'Nutrity', 1, 5, 30, 6, 45),
+           ('Natalya', 'Afforage', 2, 8, 15, 10, 0),
+           ('Natalya', 'Nutrity', 4, 10, 10, 11, 45),
+           ('Chihiro', 'Foodigm', 2, 9, 15, 9, 30),
+           ('Chihiro', 'Nutrity', 4, 9, 45, 11, 30),
+           ('Chihiro', 'Liberry', 3, 12, 15, 13, 25)]
+         
+
+
+    
+    
