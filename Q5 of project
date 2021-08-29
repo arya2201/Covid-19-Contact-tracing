@@ -1,0 +1,150 @@
+QUESTION
+
+
+While forward contact tracing can identify other people who may have been infected by the index case, it doesn't consider where the index case themself was infected from.
+
+Backward contact tracing can be used to identify the potential source of the index case's infection by looking back through their recent contact history. Backward contact tracing can be very effective because once this earlier source case is identified, a larger proportion of potentially infected people can be identified by forward tracing each of the source's contacts.
+
+Write a function backward_contact_trace(visits, index, day_time, window) that identifies the all potential sources of the specified index case's infection.
+
+The function takes the following parameters:
+
+visits is a list of visits, with each visit formatted as a 7-tuple as described above;
+index is the ID of the detected index case;
+day_time is the day and time when the index case was detected, as a 3-tuple containing the day, as an integer value, and time, as a pair of integer values, corresponding to hours and minutes, in 24 hour time; for example, (2, 15, 35) refers to 3:35pm on day 2 of the outbreak; and
+window is an integer representing the number of days prior to the detection of the index case that backward tracing will be carried out. A window of 1 indicates that all locations visited prior to the time of detection on the same day that the index case was detected will be included. A window of 2 indicates that all locations visited on the previous day will also be included, and so on.
+The function should return an alphabetically sorted list of IDs of people who should be traced and tested to identify whether they were the potential source of the index case's infection.
+
+For example:
+
+>>> visits = [('Russel', 'Foodigm', 2, 9, 0, 10, 0),
+           ('Russel', 'Afforage', 2, 10, 0, 11, 30),
+           ('Russel', 'Nutrity', 2, 11, 45, 12, 0),
+           ('Russel', 'Liberry', 3, 13, 0, 14, 15),
+           ('Natalya', 'Afforage', 2, 8, 15, 10, 0),
+           ('Natalya', 'Nutrity', 4, 10, 10, 11, 45),
+           ('Chihiro', 'Foodigm', 2, 9, 15, 9, 30),
+           ('Chihiro', 'Nutrity', 4, 9, 45, 11, 30),
+           ('Chihiro', 'Liberry', 3, 12, 15, 13, 25)]
+​
+>>> backward_contact_trace(visits, 'Natalya', (4, 13, 0), 1)
+['Chihiro']
+The reasoning is as follows:
+
+Natalya was detected at 1pm on day 4 of the outbreak, and we want to know who she could have been infected by earlier on the same day (as window=1).
+The only location that Natalya had visited on day 4 was Nutrity, between 10:10am and 11:45am.
+Chihiro also visited Nutrity at this time (from 9:45am until 11:30am), during which time she could have infected Natalya.
+Chihiro should therefore be contact traced and investigated as a potential source of Natalya's infection.
+(Additionally, outside of the scope of this problem, if Chihiro does test positive, forward contact tracing should be used to follow up on her other potential contacts!)
+As another example:
+
+>>> visits = [('Russel', 'Foodigm', 2, 9, 0, 10, 0),
+           ('Russel', 'Afforage', 2, 10, 0, 11, 30),
+           ('Russel', 'Nutrity', 2, 11, 45, 12, 0),
+           ('Russel', 'Liberry', 3, 13, 0, 14, 15),
+           ('Natalya', 'Afforage', 2, 8, 15, 10, 0),
+           ('Natalya', 'Nutrity', 4, 10, 10, 11, 45),
+           ('Chihiro', 'Foodigm', 2, 9, 15, 9, 30),
+           ('Chihiro', 'Nutrity', 4, 9, 45, 11, 30),
+           ('Chihiro', 'Liberry', 3, 12, 15, 13, 25)]
+​
+>>> backward_contact_trace(visits, 'Chihiro', (4, 12, 0), 2)
+['Natalya', 'Russel']
+The reasoning is as above; however, we are now considering visits that occurred on day 4 (up until 12pm, when Chihiro was detected), and all of day 3 (as window=2). Chihiro and Natalya both visited Nutrity on day 4, and Chihiro and Russel both visited Liberry on day 3. Chihiro may have been infected by either of them.
+
+Assumptions:
+
+You can assume that the input arguments are syntactically correct given the definitions and assumptions on this slide and on previous slides.
+You are provided with a correct reference version of the function potential_contacts(person_a, person_b) from Question 3.
+
+
+CODE::::
+
+# a correct implementation of potential_contacts(person_a, person_b)
+# do not delete this line!
+from reference import potential_contacts
+from datetime import timedelta
+
+def check_overlapping(start, end, infection_time):
+    ''' This function checks if the infection time is more than or
+         equal to the start of overlapping time '''
+    
+    total_mins = (end - start).total_seconds() / 60
+    flag = False
+    for i in range(1, int(total_mins) +1):
+        time_range = infection_time >= (start + timedelta(minutes=i))
+        if time_range:
+            flag = True
+            break
+    return flag
+
+
+def backward_contact_trace(visits, index, day_time, window):
+    ''' This function takes four parameters,
+        visits: a list of visits
+        index: infected person
+        day_time: a tuple of three values(day, hour, minute)
+        window: days prior to detection of index case
+    and returns a sorted unique list of potential contacts
+    '''
+    
+    # TODO
+    
+    day_time = list(day_time)
+    infection_time = timedelta(hours=day_time[1], minutes=day_time[2])
+    
+    # Creating a dictionary in which the keys are the person name and 
+    # the values are all the visits of that person
+    pairs = {}
+    if window !=0:
+        
+        # Checking through all the visits in the window
+        for day in range(window):
+            for visit in visits:
+                if((visit[0] in pairs) and
+                   (visit[2] == day_time[0] - day)):
+                    pairs[visit[0]].append(visit)
+                elif (visit[2] == day_time[0] - day):
+                    pairs[visit[0]] = [visit]
+    
+    # Creating backward_trace list to trace infected person
+    # prior to detection of index case
+    backward_trace = []
+    for person in pairs.keys():
+        if person != index:
+            
+            # Finding potential contacts between index and the person's visits
+            results = potential_contacts(pairs[index], pairs[person])
+            if len(list(results)[0]) != 0:
+                results = list(list(results)[0])
+                for result in results:
+                    for visit in pairs[person]:
+                        
+                        # Checking if the place and day is same
+                        if (result[0] == visit[1] and result[1] == visit[2]):
+                            start_time = timedelta(
+                                hours=result[2], minutes=result[3])
+                            end_time = timedelta(
+                                hours=result[4], minutes=result[5])
+                            overlapping = check_overlapping(
+                                start_time, end_time, infection_time)
+                            if ((day_time[0] == visit[2]) and overlapping):
+                                backward_trace.append(person)
+                            elif visit[2] < day_time[0]:
+                                backward_trace.append(person)
+
+    
+    return sorted(list(set(backward_trace)))
+
+
+visits = [('Russel', 'Foodigm', 2, 9, 0, 10, 0),
+           ('Russel', 'Afforage', 2, 10, 0, 11, 30),
+           ('Russel', 'Nutrity', 2, 11, 45, 12, 0),
+           ('Russel', 'Liberry', 3, 13, 0, 14, 15),
+           ('Natalya', 'Afforage', 2, 8, 15, 10, 0),
+           ('Natalya', 'Nutrity', 4, 10, 10, 11, 45),
+           ('Chihiro', 'Foodigm', 2, 9, 15, 9, 30),
+           ('Chihiro', 'Nutrity', 4, 9, 45, 11, 30),
+           ('Chihiro', 'Liberry', 3, 12, 15, 13, 25)]
+
+    
